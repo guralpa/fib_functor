@@ -14,12 +14,12 @@ universe u
 
 namespace CategoryTheory
 
-instance : Category.{u} Nat where
+instance : Category.{u} ℕ where
   Hom A B := ULift (PLift (A ∣ B))
   id A := ⟨⟨dvd_refl A⟩⟩
   comp X Y := ⟨⟨dvd_trans X.down.down Y.down.down⟩⟩
 
-def fib_functor : Nat ⥤ Nat where
+def fib_functor : ℕ ⥤ ℕ where
   obj := Nat.fib
   map := by
     intro X Y h
@@ -38,7 +38,13 @@ def fib_functor : Nat ⥤ Nat where
     apply congrArg
     rfl
 
-instance : Limits.HasLimitsOfSize Nat where
+def fib_entry (n : ℕ) : ℕ :=
+  let r := fun k : ℕ ↦
+  if (Nat.fib k) % n = 0 then k
+  else (r (k + 1))
+  (r 1)
+
+instance : Limits.HasLimitsOfSize ℕ where
   has_limits_of_shape := by
     sorry
 
@@ -46,14 +52,14 @@ instance : Limits.PreservesLimitsOfSize fib_functor where
   preservesLimitsOfShape := by
     sorry
 
-lemma nat_has_limits : Limits.HasLimits Nat := by
+lemma nat_has_limits : Limits.HasLimits ℕ := by
   sorry
 
 lemma fib_solset : SolutionSetCondition.{0} fib_functor := by
   rw [SolutionSetCondition]
   intro a
-  use Nat
-
+  use ℕ
+  sorry
 
 set_option pp.all true
 
