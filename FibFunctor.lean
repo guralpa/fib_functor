@@ -47,16 +47,14 @@ def fib_entry (n k : ℕ) : ℕ :=
 lemma fib_entry_dvd (a : ℕ) : a ∣ fib_functor.obj (fib_entry a 1) := by
   sorry
 
-instance : Limits.HasLimitsOfSize ℕ where
+instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
   has_limits_of_shape := by
-    sorry
+    intro J h
+    exact {has_limit := fun F ↦ {exists_limit := ⟨by sorry, by sorry⟩}}
 
 instance : Limits.PreservesLimitsOfSize fib_functor where
   preservesLimitsOfShape := by
     sorry
-
-lemma nat_has_limits : Limits.HasLimits ℕ := by
-  sorry
 
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
   have h := f.down.down
