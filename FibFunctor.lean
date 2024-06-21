@@ -14,6 +14,7 @@ universe u
 
 namespace CategoryTheory
 
+-- TODO: Instantiate using Category.Preorder
 instance : Category.{0} ℕ where
   Hom A B := ULift (PLift (A ∣ B))
   id A := ⟨⟨dvd_refl A⟩⟩
@@ -40,16 +41,21 @@ def fib_functor : ℕ ⥤ ℕ where
 
 lemma fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
   sorry
+-- upper bound on fib_entry?
 
 def fib_entry (n: ℕ) : ℕ :=
   Nat.find (fib_entry_exists n)
--- upper bound on fib_entry?
--- Nat.find
+
+lemma fib_entry_dvd (n : ℕ) : n ∣ (Nat.fib (fib_entry n)) := by
+  rw [fib_entry]
+  apply (Nat.find_spec (fib_entry_exists n))
 
 instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
   has_limits_of_shape := by
     intro J h
-    exact {has_limit := fun F ↦ {exists_limit := ⟨by sorry, by sorry⟩}}
+    exact {has_limit :=
+      fun F ↦ {exists_limit :=
+        ⟨by sorry, by sorry⟩}}
 
 instance : Limits.PreservesLimitsOfSize fib_functor where
   preservesLimitsOfShape := by
@@ -58,22 +64,18 @@ instance : Limits.PreservesLimitsOfSize fib_functor where
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
   apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
 
-#printprefix PLift
-#printprefix ULift
--- PLift.instSubsingleton
--- ULift.instSubsingleton
--- Subsingleton.elim
 lemma fib_solset : SolutionSetCondition.{0} fib_functor := by
   rw [SolutionSetCondition]
   intro a
   use ℕ
-  use fun i ↦ (Nat.find (fib_entry_exists a))
-  use fun i ↦ ⟨⟨Nat.find_spec (fib_entry_exists a)⟩⟩
+  use fun i ↦ (fib_entry a)
+  use fun i ↦ ⟨⟨fib_entry_dvd a⟩⟩
   intro X h
   use 1
-  have h' : (fib_entry a) ∣ X := by
+  have h' := h.down.down
+  have h'' : (fib_entry a) ∣ X := by
     sorry
-  use ⟨⟨h'⟩⟩
+  use ⟨⟨h''⟩⟩
   apply nat_is_simple a (fib_functor.obj X)
 
 set_option pp.all true
