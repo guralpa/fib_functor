@@ -38,14 +38,13 @@ def fib_functor : ℕ ⥤ ℕ where
     apply congrArg
     rfl
 
-def fib_entry (n k : ℕ) : ℕ :=
-  if (Nat.fib k) % n = 0 then k
-  else
-  (fib_entry n (k + 1))
-  decreasing_by {sorry}
-
-lemma fib_entry_dvd (a : ℕ) : a ∣ fib_functor.obj (fib_entry a 1) := by
+lemma fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
   sorry
+
+def fib_entry (n: ℕ) : ℕ :=
+  Nat.find (fib_entry_exists n)
+-- upper bound on fib_entry?
+-- Nat.find
 
 instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
   has_limits_of_shape := by
@@ -57,20 +56,22 @@ instance : Limits.PreservesLimitsOfSize fib_functor where
     sorry
 
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
-  have h := f.down.down
-  have h' := g.down.down
-  have h'' : h = h' := rfl
-  sorry
+  apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
 
+#printprefix PLift
+#printprefix ULift
+-- PLift.instSubsingleton
+-- ULift.instSubsingleton
+-- Subsingleton.elim
 lemma fib_solset : SolutionSetCondition.{0} fib_functor := by
   rw [SolutionSetCondition]
   intro a
   use ℕ
-  use fun i ↦ (fib_entry a 1)
-  use fun i ↦ ⟨⟨fib_entry_dvd a⟩⟩
+  use fun i ↦ (Nat.find (fib_entry_exists a))
+  use fun i ↦ ⟨⟨Nat.find_spec (fib_entry_exists a)⟩⟩
   intro X h
   use 1
-  have h' : (fib_entry a 1) ∣ X := by
+  have h' : (fib_entry a) ∣ X := by
     sorry
   use ⟨⟨h'⟩⟩
   apply nat_is_simple a (fib_functor.obj X)
