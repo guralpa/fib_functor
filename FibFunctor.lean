@@ -39,6 +39,28 @@ def fib_functor : ℕ ⥤ ℕ where
     apply congrArg
     rfl
 
+lemma fib_dvd_mul (n m : ℕ) : (Nat.fib n) ∣ (Nat.fib (n * m)) := by
+  induction' m with k ih
+  · simp
+  · rw [mul_add, mul_one]
+    by_cases h' : 1 ≤ n
+    · have h : n * k + n = n * k + (n - 1) + 1 := by
+        rw [add_assoc, Nat.sub_add_cancel]
+        exact h'
+      rw [h]
+      rw [Nat.fib_add]
+      apply dvd_add
+      · apply dvd_mul_of_dvd_left ih
+      · have p : n = n - 1 + 1 := by
+          rw [Nat.sub_add_cancel]
+          apply h'
+        rw [← p]
+        apply dvd_mul_left n.fib
+    · push_neg at h'
+      have p : n = 0 := (Nat.lt_one_iff.1 h')
+      rw [p]
+      simp
+
 lemma fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
   sorry
 -- upper bound on fib_entry?
