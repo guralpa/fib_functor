@@ -9,6 +9,9 @@ import Mathlib.CategoryTheory.Adjunction.AdjointFunctorTheorems
 import Mathlib.Algebra.Divisibility.Basic
 import Mathlib.Algebra.Group.Nat
 import Mathlib.Data.Nat.Fib.Basic
+import Mathlib.Data.Nat.Prime
+import Mathlib.Data.Nat.Factors
+import Init.Core
 
 universe u
 
@@ -61,9 +64,25 @@ lemma fib_dvd_mul (n m : ℕ) : (Nat.fib n) ∣ (Nat.fib (n * m)) := by
       rw [p]
       simp
 
-lemma fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
+lemma fib_prime_entry_exists (p : ℕ) (pp : Nat.Prime p) :  ∃k, p ∣ (Nat.fib k) := by
   sorry
--- upper bound on fib_entry?
+
+def fib_prime_entry (n: ℕ) (pn : Nat.Prime n) : ℕ :=
+  Nat.find (fib_prime_entry_exists n pn)
+
+theorem fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
+  by_cases h : n = 0
+  · rw [h]
+    simp
+  · have h : n ≠ 0 := by simp [h]
+    let pf := Nat.factors n
+    have h' : n ∣ pf.prod := by
+      dsimp [pf]
+      rw [Nat.prod_factors h]
+    -- need to figure out membership proof as part of map
+    let pe := pf.map fun n => (fib_prime_entry n _)
+    sorry
+
 
 def fib_entry (n: ℕ) : ℕ :=
   Nat.find (fib_entry_exists n)
@@ -104,3 +123,20 @@ set_option pp.all true
 
 theorem fib_has_left_adjoint : Functor.IsRightAdjoint.{0, 0} fib_functor :=
   isRightAdjoint_of_preservesLimits_of_solutionSetCondition fib_functor fib_solset
+
+-- Eventually: Prove the fib entry is a functor
+def fib_entry_functor : ℕ ⥤ ℕ where
+  obj := fib_entry
+  map := by
+    intro X Y h
+    sorry
+  map_id := by
+    sorry
+  map_comp := by
+    sorry
+
+-- Eventually eventually: Show adjunction between these two
+instance: Adjunction fib_entry_functor fib_functor where
+  homEquiv := by sorry
+  unit := by sorry
+  counit := by sorry
