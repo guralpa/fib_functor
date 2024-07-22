@@ -11,17 +11,46 @@ import Mathlib.Algebra.Group.Nat
 import Mathlib.Data.Nat.Fib.Basic
 import Mathlib.Data.Nat.Prime
 import Mathlib.Data.Nat.Factors
+import Mathlib.Data.Nat.Pairing
+import Mathlib.Algebra.Periodic
+import Mathlib.Data.Finset.Card
 import Init.Core
 
 universe u
 
 namespace CategoryTheory
 
--- TODO: Instantiate using Category.Preorder
+-- Defining the category structure directly:
+
 instance : Category.{0} ℕ where
   Hom A B := ULift (PLift (A ∣ B))
   id A := ⟨⟨dvd_refl A⟩⟩
   comp X Y := ⟨⟨dvd_trans X.down.down Y.down.down⟩⟩
+
+-- Using the category structure of a preorder
+
+instance : Preorder ℕ where
+  le := fun n m => n ∣ m
+  lt := fun n m => n ∣ m ∧ n ≠ m
+  le_refl := fun n => dvd_rfl
+  le_trans := fun n m k => dvd_trans
+  lt_iff_le_not_le := by
+    intro n m
+    constructor
+    · simp
+      intro h
+      contrapose!
+      intro h'
+      have h' := h' h
+      exact (dvd_antisymm h h')
+    · simp
+      intro h
+      contrapose!
+      intro h'
+      have h' := h' h
+      rw [h']
+
+instance : Category.{0} ℕ := Preorder.smallCategory ℕ
 
 def fib_functor : ℕ ⥤ ℕ where
   obj := Nat.fib
