@@ -189,15 +189,31 @@ lemma fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := b
 lemma fib_entry_one : fib_entry 1 = 1 := by
   sorry
 
+lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
+  apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
+
 instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
   has_limits_of_shape := by
     intro J h
-    exact {has_limit :=
-      fun F ↦ {exists_limit :=
-        ⟨by sorry, by sorry⟩}}
-
-lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
-  apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
+    constructor
+    intro F
+    constructor
+    constructor
+    constructor
+    · constructor
+      · intro s j
+        apply nat_is_simple
+      · intro s m j
+        apply nat_is_simple
+      · intro s
+        sorry
+    · constructor
+      constructor
+      · intro X Y f
+        apply nat_is_simple
+      · intro X
+        sorry
+      · sorry
 
 instance : Limits.PreservesLimitsOfSize fib_functor where
   preservesLimitsOfShape := by
