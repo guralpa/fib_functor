@@ -127,24 +127,55 @@ instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
       fun F ↦ {exists_limit :=
         ⟨by sorry, by sorry⟩}}
 
-instance : Limits.PreservesLimitsOfSize fib_functor where
-  preservesLimitsOfShape := by
-    sorry
-
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
   apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
+
+instance : Limits.PreservesLimitsOfSize fib_functor where
+  preservesLimitsOfShape := by
+    intro J inst
+    constructor
+    intro K
+    constructor
+    intro c h
+    constructor
+    · intro s j
+      apply nat_is_simple
+    · intro s m j
+      apply nat_is_simple
+    · intro s
+      simp
+      have h : s.pt ∣ fib_functor.obj c.pt := by
+        dsimp [fib_functor]
+        sorry
+      exact ⟨⟨h⟩⟩
 
 lemma fib_solset : SolutionSetCondition.{0} fib_functor := by
   rw [SolutionSetCondition]
   intro a
   use ℕ
   use fun i ↦ (fib_entry a)
-  use fun i ↦ ⟨⟨fib_entry_dvd a⟩⟩
+  use fun i ↦ ⟨⟨dvd_fib_fib_entry a⟩⟩
   intro X h
   use 1
   have h' := h.down.down
   have h'' : (fib_entry a) ∣ X := by
-    sorry
+    have h'' := fib_entry_dvd a (Nat.fib X) h'
+    by_cases xeq : X = 0
+    · rw [xeq]
+      simp
+    · by_cases xeq' : X = 1
+      · rw [xeq'] at h'
+        have h' := Nat.dvd_one.1 h'
+        rw [h']
+        rw [fib_entry_one]
+        simp
+      · have xge : 2 ≤ X := by sorry
+        have H : fib_entry X.fib = X := by
+          norm_num [fib_entry, xeq]
+          have ⟨k, ⟨kne, fe_ex⟩⟩ := (fib_nonzero_entry_exists X xeq)
+          sorry
+        rw [H] at h''
+        exact h''
   use ⟨⟨h''⟩⟩
   apply nat_is_simple a (fib_functor.obj X)
 
