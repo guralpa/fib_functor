@@ -153,19 +153,26 @@ set_option pp.all true
 theorem fib_has_left_adjoint : Functor.IsRightAdjoint.{0, 0} fib_functor :=
   isRightAdjoint_of_preservesLimits_of_solutionSetCondition fib_functor fib_solset
 
--- Eventually: Prove the fib entry is a functor
 def fib_entry_functor : ℕ ⥤ ℕ where
   obj := fib_entry
   map := by
     intro X Y h
-    sorry
+    exact ⟨⟨fib_entry_dvd X Y h.down.down⟩⟩
   map_id := by
-    sorry
+    intro a
+    dsimp
+    apply congrArg
+    apply congrArg
+    rfl
   map_comp := by
-    sorry
+    intro a b c h h'
+    dsimp
+    apply congrArg
+    apply congrArg
+    rfl
 
 -- Eventually eventually: Show adjunction between these two
-instance: Adjunction fib_entry_functor fib_functor where
+instance : Adjunction fib_entry_functor fib_functor where
   homEquiv := by sorry
   unit := by sorry
   counit := by sorry
