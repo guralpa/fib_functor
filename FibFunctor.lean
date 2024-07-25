@@ -93,12 +93,31 @@ lemma fib_dvd_mul (n m : ℕ) : (Nat.fib n) ∣ (Nat.fib (n * m)) := by
       rw [p]
       simp
 
-lemma fib_prime_entry_exists (p : ℕ) (pp : Nat.Prime p) :  ∃k, p ∣ (Nat.fib k) := by
+def fib_mod (m : ℕ) : ℕ → Fin (m + 1) := fun n => Fin.ofNat (Nat.fib n)
+
+lemma fib_pair_repeats_mod_m (m : ℕ) (mne : m ≠ 0): ∃ n, ∃ k ≠ 0, (fib_mod_m m) n = (fib_mod_m m ) n + k ∧ (fib_mod_m m) n + 1 = (fib_mod_m m ) n + 1 + k := by
+  let fib_pairs := (List.map (fun n => (Nat.pair (Nat.fib n) (Nat.fib (n+ 1)))) (List.iota (m^2 - 1)))
   sorry
+/-
+lemma prime_mul_dvd_fib_mul (pf : List ℕ) (hp : ∀ p, p ∈ pf → Prime p) : ∃ N, (pf.prod) ∣ (Nat.fib N) :=
+  match pf with
+  |  [] => by
+    use 1
+    rw [List.prod_nil]
+    simp
+  |  p::r =>
+      let h := (List.mem_cons_self p r)
+      let ih := (prime_mul_dvd_fib_mul r fun rp hr => (hp rp (List.mem_cons_of_mem p hr))) -/
 
-def fib_prime_entry (n: ℕ) (pn : Nat.Prime n) : ℕ :=
-  Nat.find (fib_prime_entry_exists n pn)
+/-
+def prime_of_pf (pf : List ℕ) (hp : p ∈ pf → Prime p) : (List Prime ℕ) :=
+  match pf with
+  |  [] => []
+  |  p::r =>
+      let h := (List.mem_cons_self p r)
+      (hp h)::(prime_of_pf r fun hr => (hp (List.mem_cons_of_mem hr))) -/
 
+/-
 theorem fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
   by_cases h : n = 0
   · rw [h]
@@ -110,15 +129,65 @@ theorem fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
       rw [Nat.prod_factors h]
     -- need to figure out membership proof as part of map
     let pe := pf.map fun n => (fib_prime_entry n _)
-    sorry
+    sorry -/
 
+def fib_mod_pair (m : ℕ) := fun n => ((fib_mod m) n, (fib_mod m) n + 1)
+
+def pairs_mod_m (m : ℕ) := Finset.product (Fin m) (Fin m)
+
+lemma fib_mod_m_periodic (m : ℕ) : (fib_mod m).Periodic m := by
+  dsimp[fib_mod]
+  intro x
+  by_contra
+  -- let fib_pairs := (List.map (fun n => (Nat.pair (Nat.fib n) (Nat.fib (n+ 1)))) (List.iota (m^2 - 1)))
+  let pairs_mod_m := (Fin (m + 1)) × (Fin (m + 1))
+  have h : ∀ a ∈ ℕ, ((fib_mod_pair m) a) ∈ pairs_mod_m := by sorry
+  have hc : (card pairs_mod_m) < Nat.card := by sorry
+  have ⟨k, l, hne, heq⟩ := Finset.exists_ne_map_eq_of_card_lt_of_maps_to hc h
+  sorry
+
+theorem fib_nonzero_entry_exists (n : ℕ) (hn : n ≠ 0): ∃k ≠ 0, n ∣ (Nat.fib k) := by
+  have hp : ∀m, ∃k ≠ 0, (fib_mod n) m = (fib_mod n) (m + k) := by
+    intro m
+    dsimp[fib_mod]
+    have h : ∃p, ∃q, p ≠ q ∧ (Nat.fib p % n = Nat.fib q % n) := by
+      sorry
+  have ⟨k, hk1, hk2⟩ : ∃k ≠ 0, (fib_mod_m n) k = 0 := by
+    have ⟨k, hk1, hk2⟩ := (hp 0)
+    simp! at hk1
+    dsimp[fib_mod_m] at hk2
+    norm_num at hk2
+    dsimp[fib_mod_m]
+    rw[eq_comm] at hk2
+    use k
+  use k;
+  dsimp[fib_mod_m] at hk2
+  use hk1
+  apply Nat.dvd_of_mod_eq_zero
+  use hk2
+  sorry
 
 def fib_entry (n: ℕ) : ℕ :=
-  Nat.find (fib_entry_exists n)
+  if h : n ≠ 0 then Nat.find (fib_nonzero_entry_exists n h)
+  else 0
 
-lemma fib_entry_dvd (n : ℕ) : n ∣ (Nat.fib (fib_entry n)) := by
+lemma dvd_fib_fib_entry (n : ℕ) : n ∣ (Nat.fib (fib_entry n)) := by
   rw [fib_entry]
-  apply (Nat.find_spec (fib_entry_exists n))
+  by_cases h : n ≠ 0
+  · simp[h]
+    apply (Nat.find_spec (fib_nonzero_entry_exists n h)).2
+  · simp[h]
+
+lemma fib_entry_exists' (n : ℕ) : ∃k, n ∣ Nat.fib k := by
+  use fib_entry n
+  apply dvd_fib_fib_entry n
+
+lemma fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := by
+  sorry
+
+#eval fib_entry 1 -- how to use? rfl won't work
+lemma fib_entry_one : fib_entry 1 = 1 := by
+  sorry
 
 instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
   has_limits_of_shape := by
