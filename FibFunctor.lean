@@ -14,6 +14,7 @@ import Mathlib.Data.Nat.Factors
 import Mathlib.Data.Nat.Pairing
 import Mathlib.Algebra.Periodic
 import Mathlib.Data.Finset.Card
+import Mathlib.Data.Finite.Card
 import Init.Core
 
 universe u
@@ -93,11 +94,10 @@ lemma fib_dvd_mul (n m : ℕ) : (Nat.fib n) ∣ (Nat.fib (n * m)) := by
       rw [p]
       simp
 
-def fib_mod (m : ℕ) : ℕ → Fin (m + 1) := fun n => Fin.ofNat (Nat.fib n)
-
+/-
 lemma fib_pair_repeats_mod_m (m : ℕ) (mne : m ≠ 0): ∃ n, ∃ k ≠ 0, (fib_mod_m m) n = (fib_mod_m m ) n + k ∧ (fib_mod_m m) n + 1 = (fib_mod_m m ) n + 1 + k := by
   let fib_pairs := (List.map (fun n => (Nat.pair (Nat.fib n) (Nat.fib (n+ 1)))) (List.iota (m^2 - 1)))
-  sorry
+  sorry -/
 /-
 lemma prime_mul_dvd_fib_mul (pf : List ℕ) (hp : ∀ p, p ∈ pf → Prime p) : ∃ N, (pf.prod) ∣ (Nat.fib N) :=
   match pf with
@@ -131,41 +131,90 @@ theorem fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
     let pe := pf.map fun n => (fib_prime_entry n _)
     sorry -/
 
-def fib_mod_pair (m : ℕ) := fun n => ((fib_mod m) n, (fib_mod m) n + 1)
+def fib_mod (m : ℕ) : ℕ → Fin (m + 1) := fun n => Fin.ofNat (Nat.fib n)
 
-def pairs_mod_m (m : ℕ) := Finset.product (Fin m) (Fin m)
+lemma fib_mod_add_two (m : ℕ) {n : ℕ}: (fib_mod m) (n + 2) = ((fib_mod m) n) + ((fib_mod m) (n + 1)) := by
+  dsimp [fib_mod, Fin.ofNat]
+  rw [Fin.add_def]
+  simp [Sigma.mk.inj_iff, Nat.fib_add]
 
-lemma fib_mod_m_periodic (m : ℕ) : (fib_mod m).Periodic m := by
-  dsimp[fib_mod]
-  intro x
-  by_contra
-  -- let fib_pairs := (List.map (fun n => (Nat.pair (Nat.fib n) (Nat.fib (n+ 1)))) (List.iota (m^2 - 1)))
-  let pairs_mod_m := (Fin (m + 1)) × (Fin (m + 1))
-  have h : ∀ a ∈ ℕ, ((fib_mod_pair m) a) ∈ pairs_mod_m := by sorry
-  have hc : (card pairs_mod_m) < Nat.card := by sorry
-  have ⟨k, l, hne, heq⟩ := Finset.exists_ne_map_eq_of_card_lt_of_maps_to hc h
+lemma fib_mod_add_one (m : ℕ) {n : ℕ} (h : n ≠ 0): (fib_mod m) (n - 1) = ((fib_mod m) (n + 1)) - ((fib_mod m) (n)) := by
+  dsimp [fib_mod, Fin.ofNat]
+  rw [Fin.sub_def]
+  simp [Sigma.mk.inj_iff]
+  rw [← Nat.add_sub_assoc, Nat.add_comm ((n + 1).fib), Nat.add_sub_assoc]
+  simp
+  have : (n - 1).fib = (n + 1).fib - n.fib := by simp [Nat.fib_add_one h]
+  simp [this]
   sorry
 
-theorem fib_nonzero_entry_exists (n : ℕ) (hn : n ≠ 0): ∃k ≠ 0, n ∣ (Nat.fib k) := by
-  have hp : ∀m, ∃k ≠ 0, (fib_mod n) m = (fib_mod n) (m + k) := by
-    intro m
-    dsimp[fib_mod]
-    have h : ∃p, ∃q, p ≠ q ∧ (Nat.fib p % n = Nat.fib q % n) := by
+def fib_mod_pair (m : ℕ) : ℕ → (Fin (m + 1)) × (Fin (m + 1)) := fun n => ((fib_mod m) n, (fib_mod m) (n + 1))
+
+theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p := by
+  dsimp
+  let pairs_mod_m := (Fin (m + 1)) × (Fin (m + 1))
+  have ⟨k, l, hne, heq⟩ : ∃x, ∃y, x ≠ y ∧ (fib_mod_pair m) x = (fib_mod_pair m) y := Finite.exists_ne_map_eq_of_infinite (fib_mod_pair m)
+  dsimp [fib_mod_pair] at heq
+  let ⟨hkl, hkl'⟩ := (Prod.mk.inj_iff.1 heq)
+  by_cases kle : k ≤ l
+  · use l - k
+    constructor
+    · contrapose! hne
+      rw [← Nat.zero_add k, eq_comm]
+      apply Nat.eq_add_of_sub_eq kle hne
+    intro x
+    by_cases xle : x ≤ k
+    have ⟨n, xeqn⟩ : ∃n, x = k - n := by
+      have ⟨n, keq⟩ := Nat.exists_eq_add_of_le xle
+      use n
+      norm_num [keq]
+    rw [xeqn, ← Nat.add_sub_assoc _, ← Nat.sub_add_comm _, Nat.add_comm k l, Nat.sub_add_comm]
+    simp
+    induction' n using Nat.twoStepInduction with a h1 h2
+    · simp [hkl]
+    · have h : (fib_mod m) (l - 1) = (fib_mod m ) (l + 1) - ((fib_mod m ) l) := by
+        have h' : (fib_mod m) (l - 1) ≤ (fib_mod m) l := by sorry
+        rw [Eq.comm]
+        sorry
+      have h' : (fib_mod m) (k - 1) = (fib_mod m ) (k + 1) - ((fib_mod m ) k) := by
+        have h' : (fib_mod m) (k - 1) ≤ (fib_mod m) k := by sorry
+        rw [Eq.comm]
+        sorry
+      simp [h, h']
+      rw [hkl, hkl']
+    · simp [Nat.succ]
       sorry
-  have ⟨k, hk1, hk2⟩ : ∃k ≠ 0, (fib_mod_m n) k = 0 := by
+  · sorry
+
+
+#check Fintype.exists_ne_map_eq_of_card_lt
+-- try one of the type-y versions
+-- set_option pp.analyze true
+theorem fib_nonzero_entry_exists (n : ℕ) (hn : n ≠ 0): ∃k ≠ 0, n ∣ (Nat.fib k) := by
+  have hp : ∀m, ∃k ≠ 0, (fib_mod (n - 1)) m = (fib_mod (n - 1)) (m + k) := by
+    intro m
+    have ⟨p, ⟨pne, pp⟩⟩ := (fib_mod_m_periodic (n - 1))
+    use p
+    dsimp at pp
+    simp [fib_mod_m_periodic (n - 1), pne, pp]
+  have ⟨k, hk1, hk2⟩ : ∃k ≠ 0, (fib_mod (n - 1)) k = (Fin.ofNat 0) := by
     have ⟨k, hk1, hk2⟩ := (hp 0)
     simp! at hk1
-    dsimp[fib_mod_m] at hk2
+    dsimp[fib_mod] at hk2
     norm_num at hk2
-    dsimp[fib_mod_m]
+    dsimp[fib_mod]
     rw[eq_comm] at hk2
     use k
   use k;
-  dsimp[fib_mod_m] at hk2
+  dsimp[fib_mod] at hk2
   use hk1
   apply Nat.dvd_of_mod_eq_zero
-  use hk2
-  sorry
+  dsimp [Fin.ofNat] at hk2
+  have : n - 1 + 1 = n := by
+    apply Nat.sub_add_cancel
+    simp [Nat.one_le_iff_ne_zero, hn]
+  simp [this] at hk2
+  apply Fin.val_eq_of_eq hk2
 
 def fib_entry (n: ℕ) : ℕ :=
   if h : n ≠ 0 then Nat.find (fib_nonzero_entry_exists n h)
@@ -187,7 +236,7 @@ lemma fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := b
 
 #eval fib_entry 1 -- how to use? rfl won't work
 lemma fib_entry_one : fib_entry 1 = 1 := by
-  sorry
+  native_decide
 
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
   apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
@@ -263,8 +312,6 @@ lemma fib_solset : SolutionSetCondition.{0} fib_functor := by
         exact h''
   use ⟨⟨h''⟩⟩
   apply nat_is_simple a (fib_functor.obj X)
-
-set_option pp.all true
 
 theorem fib_has_left_adjoint : Functor.IsRightAdjoint.{0, 0} fib_functor :=
   isRightAdjoint_of_preservesLimits_of_solutionSetCondition fib_functor fib_solset
