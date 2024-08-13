@@ -1,6 +1,7 @@
 -- This module serves as the root of the `FibFunctor` library.
 -- Import modules here that should be built as part of the library.
 import «FibFunctor».Basic
+import «FibFunctor».GenFib
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Functor.Basic
 import Mathlib.CategoryTheory.Adjunction.Basic
@@ -184,6 +185,7 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
       rw [hkl, hkl']
     · simp [Nat.succ]
       sorry
+    sorry
   · sorry
 
 
@@ -230,6 +232,26 @@ lemma dvd_fib_fib_entry (n : ℕ) : n ∣ (Nat.fib (fib_entry n)) := by
 lemma fib_entry_exists' (n : ℕ) : ∃k, n ∣ Nat.fib k := by
   use fib_entry n
   apply dvd_fib_fib_entry n
+
+namespace Nat
+
+lemma fib_entry_gcd (n m : ℕ) : fib_entry (Nat.gcd m n) = Nat.gcd (fib_entry m) (fib_entry n) := by
+  induction' m, n using Nat.gcd.induction with a m n h h'
+  · dsimp [fib_entry]
+    simp
+  · dsimp [fib_entry]
+    rw [← Nat.gcd_rec m n] at h'
+    have mne : m ≠ 0 := by intro h''; rw [Eq.comm] at h''; apply Nat.ne_of_lt h h''
+    simp [mne]
+    have h'' : m.gcd n ≠ 0 := Nat.gcd_ne_zero_left mne
+    simp [h'']
+    conv_rhs => simp [mne]
+    -- conv_rhs => rw [← Nat.mod_add_div' n m]
+    by_cases neq : n = 0
+    · simp [neq]
+    · simp [neq]
+      sorry
+
 
 lemma fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := by
   sorry
