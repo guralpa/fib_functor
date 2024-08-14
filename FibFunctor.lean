@@ -1,7 +1,7 @@
 -- This module serves as the root of the `FibFunctor` library.
 -- Import modules here that should be built as part of the library.
 import «FibFunctor».Basic
-import «FibFunctor».GenFib
+-- import «FibFunctor».GenFib
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Functor.Basic
 import Mathlib.CategoryTheory.Adjunction.Basic
@@ -165,27 +165,26 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
       apply Nat.eq_add_of_sub_eq kle hne
     intro x
     by_cases xle : x ≤ k
-    have ⟨n, xeqn⟩ : ∃n, x = k - n := by
-      have ⟨n, keq⟩ := Nat.exists_eq_add_of_le xle
-      use n
-      norm_num [keq]
-    rw [xeqn, ← Nat.add_sub_assoc _, ← Nat.sub_add_comm _, Nat.add_comm k l, Nat.sub_add_comm]
-    simp
-    induction' n using Nat.twoStepInduction with a h1 h2
-    · simp [hkl]
-    · have h : (fib_mod m) (l - 1) = (fib_mod m ) (l + 1) - ((fib_mod m ) l) := by
-        have h' : (fib_mod m) (l - 1) ≤ (fib_mod m) l := by sorry
-        rw [Eq.comm]
+    · have ⟨n, xeqn, nle⟩ : ∃n, x = k - n ∧ n ≤ k := by
+        have ⟨n, keq⟩ := Nat.exists_eq_add_of_le xle
+        use n
+        norm_num [keq]
+      rw [xeqn, ← Nat.add_sub_assoc _, ← Nat.sub_add_comm _, Nat.add_comm k l, Nat.sub_add_comm]
+      simp
+      induction' n using Nat.twoStepInduction with a h1 h2
+      · simp [hkl]
+      · have h : (fib_mod m) (l - 1) = (fib_mod m ) (l + 1) - ((fib_mod m ) l) := by
+          sorry
+        have h' : (fib_mod m) (k - 1) = (fib_mod m ) (k + 1) - ((fib_mod m ) k) := by
+          sorry
+        simp [h, h']
+        rw [hkl, hkl']
+      · simp [Nat.succ]
         sorry
-      have h' : (fib_mod m) (k - 1) = (fib_mod m ) (k + 1) - ((fib_mod m ) k) := by
-        have h' : (fib_mod m) (k - 1) ≤ (fib_mod m) k := by sorry
-        rw [Eq.comm]
-        sorry
-      simp [h, h']
-      rw [hkl, hkl']
-    · simp [Nat.succ]
-      sorry
-    sorry
+      · apply Nat.le_trans nle kle
+      · apply nle
+      · apply kle
+    ·
   · sorry
 
 
@@ -233,27 +232,22 @@ lemma fib_entry_exists' (n : ℕ) : ∃k, n ∣ Nat.fib k := by
   use fib_entry n
   apply dvd_fib_fib_entry n
 
-namespace Nat
+lemma fib_entry_period (n : ℕ) : (fib_mod n).Periodic (fib_entry n) := by
+  dsimp
+  intro x
+  sorry
 
-lemma fib_entry_gcd (n m : ℕ) : fib_entry (Nat.gcd m n) = Nat.gcd (fib_entry m) (fib_entry n) := by
-  induction' m, n using Nat.gcd.induction with a m n h h'
-  · dsimp [fib_entry]
-    simp
-  · dsimp [fib_entry]
-    rw [← Nat.gcd_rec m n] at h'
-    have mne : m ≠ 0 := by intro h''; rw [Eq.comm] at h''; apply Nat.ne_of_lt h h''
-    simp [mne]
-    have h'' : m.gcd n ≠ 0 := Nat.gcd_ne_zero_left mne
-    simp [h'']
-    conv_rhs => simp [mne]
-    -- conv_rhs => rw [← Nat.mod_add_div' n m]
-    by_cases neq : n = 0
-    · simp [neq]
-    · simp [neq]
-      sorry
+#eval List.map (fib_mod 5) (List.iota 50)
 
+lemma fib_entry_dvd_iff_dvd_fib (m n : ℕ) : ((fib_entry m) ∣ n) ↔ m ∣ (Nat.fib n) := by
+  constructor
+  · intro h
+    have : Nat.fib (fib_entry m) ∣ Nat.fib n := Nat.fib_dvd (fib_entry m) n h
+    apply Nat.dvd_trans (dvd_fib_fib_entry m) this
+  · intro h
+    sorry
 
-lemma fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := by
+theorem fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := by
   sorry
 
 #eval fib_entry 1 -- how to use? rfl won't work
