@@ -51,6 +51,8 @@ lemma fib_mod_add_two (m : ℕ) {n : ℕ}: (fib_mod m) (n + 2) = ((fib_mod m) n)
   rw [Fin.add_def]
   simp [Sigma.mk.inj_iff, Nat.fib_add]
 
+-- Regular number theoretic result... should be true!
+
 lemma mod_sub_mod_mod (m n k : ℕ) (h : n ≤ k) : (k - (n % m)) % m = (k - n) % m := by
   sorry
 
@@ -73,13 +75,16 @@ lemma fib_mod_add_one (m : ℕ) (n : ℕ) (h : n ≠ 0): (fib_mod m) (n - 1) = (
 
 def fib_mod_pair (m : ℕ) : ℕ → (Fin (m + 1)) × (Fin (m + 1)) := fun n => ((fib_mod m) n, (fib_mod m) (n + 1))
 
+-- Impportant result; extremely bulky. Can be made easier?
+
 theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p := by
   dsimp
   let pairs_mod_m := (Fin (m + 1)) × (Fin (m + 1))
   have ⟨k, l, hne, heq⟩ : ∃x, ∃y, x ≠ y ∧ (fib_mod_pair m) x = (fib_mod_pair m) y := Finite.exists_ne_map_eq_of_infinite (fib_mod_pair m)
   dsimp [fib_mod_pair] at heq
   let ⟨hkl, hkl'⟩ := (Prod.mk.inj_iff.1 heq)
-  by_cases kle : k ≤ l
+  wlog kle : k ≤ l generalizing k l
+  · sorry
   · use l - k
     constructor
     · contrapose! hne
@@ -93,6 +98,7 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
         norm_num [keq]
       rw [xeqn, ← Nat.add_sub_assoc _, ← Nat.sub_add_comm _, Nat.add_comm k l, Nat.sub_add_comm]
       simp
+      subst xeqn
       induction' n using Nat.twoStepInduction with a h1 h2
       · simp [hkl]
       · have h : (fib_mod m) (l - 1) = (fib_mod m ) (l + 1) - ((fib_mod m ) l) := by
@@ -105,12 +111,12 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
         rw [hkl, hkl']
       · simp [Nat.succ]
         simp [Nat.sub_add_eq]
+        rw [fib_mod_add_one]
         sorry
-      · apply Nat.le_trans nle kle
-      · apply nle
-      · apply kle
+      · omega
+      · exact nle
+      · exact kle
     · sorry
-  · sorry
 
 theorem fib_nonzero_entry_exists (n : ℕ) (hn : n ≠ 0): ∃k ≠ 0, n ∣ (Nat.fib k) := by
   have hp : ∀m, ∃k ≠ 0, (fib_mod (n - 1)) m = (fib_mod (n - 1)) (m + k) := by
@@ -170,13 +176,15 @@ lemma fib_mod_zero_of_dvd_fib (m n : ℕ) : m ≠ 0 → (m ∣ Nat.fib n ↔ (fi
     apply Nat.dvd_of_mod_eq_zero
     apply Fin.val_eq_of_eq h'
 
+-- These shouldn't be too bad
+
 lemma fib_mod_zero_add (m n k : ℕ) (h : fib_mod m n = 0) (h' : fib_mod m k = 0) : fib_mod m (n + k) = 0 := by
   sorry
 
 lemma fib_entry_dvd_of_fib_mod_zero (m n : ℕ) (mne : m ≠ 0) (h : fib_mod (m - 1) n = 0) : fib_entry m ∣ n := by
   sorry
 
-lemma fib_entry_dvd_iff_dvd_fib (m n : ℕ) : ((fib_entry m) ∣ n) ↔ m ∣ (Nat.fib n) := by
+theorem fib_entry_dvd_iff_dvd_fib (m n : ℕ) : ((fib_entry m) ∣ n) ↔ m ∣ (Nat.fib n) := by
   constructor
   · intro h
     have : Nat.fib (fib_entry m) ∣ Nat.fib n := Nat.fib_dvd (fib_entry m) n h
@@ -254,6 +262,8 @@ def fib_functor : ℕ ⥤ ℕ where
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
   apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
 
+-- How to prove Category Theory things?
+
 instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
   has_limits_of_shape := by
     intro J h
@@ -262,23 +272,27 @@ instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
     constructor
     constructor
     constructor
+    case has_limit.exists_limit.val.cone =>
+      constructor
+      · constructor
+        intro j Y f
+        constructor
+        intro X
+        simp
+        sorry
+      · use 1
     · constructor
-      · intro s j
-        apply nat_is_simple
-      · intro s m j
+      intro c j
+      · constructor
+      · intro c m j
         apply nat_is_simple
       · intro s
+        have t := s.π.app
+        simp at t
         constructor
-        have nt := s.π
-        have C := ?has_limit.exists_limit.val.cone
+        constructor
+        change _ ∣ _
         sorry
-    · constructor
-      constructor
-      · intro X Y f
-        apply nat_is_simple
-      · intro X
-        sorry
-      · sorry
 
 instance : Limits.PreservesLimitsOfSize fib_functor where
   preservesLimitsOfShape := by
@@ -334,8 +348,50 @@ def fib_entry_functor : ℕ ⥤ ℕ where
     apply congrArg
     rfl
 
--- Eventually eventually: Show adjunction between these two
+-- How to swap order of goals? Answer: Use case (goal) =>
 instance : Adjunction fib_entry_functor fib_functor where
-  homEquiv := by sorry
-  unit := by sorry
-  counit := by sorry
+  homEquiv := by
+    intro X Y
+    dsimp [fib_entry_functor, fib_functor]
+    have ⟨h₁, h₂⟩ := fib_entry_dvd_iff_dvd_fib X Y
+    constructor
+    case toFun =>
+      intro h
+      constructor
+      constructor
+      apply h₁ h.down.down
+    case invFun =>
+      intro h
+      constructor
+      constructor
+      apply h₂ h.down.down
+    next =>
+      dsimp [Function.LeftInverse]
+      intro h
+      apply nat_is_simple
+    next =>
+      dsimp [Function.RightInverse]
+      intro h'
+      apply nat_is_simple
+  unit := by
+    constructor
+    case app =>
+      intro X
+      dsimp [fib_functor, fib_entry_functor]
+      exact ⟨⟨dvd_fib_fib_entry X⟩⟩
+    next =>
+      intro X Y f
+      apply nat_is_simple
+  counit := by
+    constructor
+    case app =>
+      intro X
+      dsimp [fib_entry_functor, fib_functor]
+      constructor
+      constructor
+      change _ ∣ _
+      apply (fib_entry_dvd_iff_dvd_fib (Nat.fib X) X ).2
+      simp
+    next =>
+      intro X Y f
+      apply nat_is_simple
