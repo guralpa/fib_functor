@@ -16,62 +16,11 @@ import Mathlib.Data.Nat.Pairing
 import Mathlib.Algebra.Periodic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finite.Card
+import Mathlib.Order.Monotone.Basic
 import Init.Core
 
 universe u
 
-namespace CategoryTheory
-
--- Defining the category structure directly:
-
-instance : Category.{0} ℕ where
-  Hom A B := ULift (PLift (A ∣ B))
-  id A := ⟨⟨dvd_refl A⟩⟩
-  comp X Y := ⟨⟨dvd_trans X.down.down Y.down.down⟩⟩
-
--- Using the category structure of a preorder
-
-instance : Preorder ℕ where
-  le := fun n m => n ∣ m
-  lt := fun n m => n ∣ m ∧ n ≠ m
-  le_refl := fun n => dvd_rfl
-  le_trans := fun n m k => dvd_trans
-  lt_iff_le_not_le := by
-    intro n m
-    constructor
-    · simp
-      intro h
-      contrapose!
-      intro h'
-      have h' := h' h
-      exact (dvd_antisymm h h')
-    · simp
-      intro h
-      contrapose!
-      intro h'
-      have h' := h' h
-      rw [h']
-
-instance : Category.{0} ℕ := Preorder.smallCategory ℕ
-
-def fib_functor : ℕ ⥤ ℕ where
-  obj := Nat.fib
-  map := by
-    intro X Y h
-    exact ⟨⟨Nat.fib_dvd X Y h.down.down⟩⟩
-    -- TODO: prove fib_dvd yourself
-  map_id := by
-    intro a
-    dsimp
-    apply congrArg
-    apply congrArg
-    rfl
-  map_comp := by
-    intro a b c h h'
-    dsimp
-    apply congrArg
-    apply congrArg
-    rfl
 
 lemma fib_dvd_mul (n m : ℕ) : (Nat.fib n) ∣ (Nat.fib (n * m)) := by
   induction' m with k ih
@@ -95,43 +44,6 @@ lemma fib_dvd_mul (n m : ℕ) : (Nat.fib n) ∣ (Nat.fib (n * m)) := by
       rw [p]
       simp
 
-/-
-lemma fib_pair_repeats_mod_m (m : ℕ) (mne : m ≠ 0): ∃ n, ∃ k ≠ 0, (fib_mod_m m) n = (fib_mod_m m ) n + k ∧ (fib_mod_m m) n + 1 = (fib_mod_m m ) n + 1 + k := by
-  let fib_pairs := (List.map (fun n => (Nat.pair (Nat.fib n) (Nat.fib (n+ 1)))) (List.iota (m^2 - 1)))
-  sorry -/
-/-
-lemma prime_mul_dvd_fib_mul (pf : List ℕ) (hp : ∀ p, p ∈ pf → Prime p) : ∃ N, (pf.prod) ∣ (Nat.fib N) :=
-  match pf with
-  |  [] => by
-    use 1
-    rw [List.prod_nil]
-    simp
-  |  p::r =>
-      let h := (List.mem_cons_self p r)
-      let ih := (prime_mul_dvd_fib_mul r fun rp hr => (hp rp (List.mem_cons_of_mem p hr))) -/
-
-/-
-def prime_of_pf (pf : List ℕ) (hp : p ∈ pf → Prime p) : (List Prime ℕ) :=
-  match pf with
-  |  [] => []
-  |  p::r =>
-      let h := (List.mem_cons_self p r)
-      (hp h)::(prime_of_pf r fun hr => (hp (List.mem_cons_of_mem hr))) -/
-
-/-
-theorem fib_entry_exists (n : ℕ) : ∃k, n ∣ (Nat.fib k) := by
-  by_cases h : n = 0
-  · rw [h]
-    simp
-  · have h : n ≠ 0 := by simp [h]
-    let pf := Nat.factors n
-    have h' : n ∣ pf.prod := by
-      dsimp [pf]
-      rw [Nat.prod_factors h]
-    -- need to figure out membership proof as part of map
-    let pe := pf.map fun n => (fib_prime_entry n _)
-    sorry -/
-
 def fib_mod (m : ℕ) : ℕ → Fin (m + 1) := fun n => Fin.ofNat (Nat.fib n)
 
 lemma fib_mod_add_two (m : ℕ) {n : ℕ}: (fib_mod m) (n + 2) = ((fib_mod m) n) + ((fib_mod m) (n + 1)) := by
@@ -139,7 +51,12 @@ lemma fib_mod_add_two (m : ℕ) {n : ℕ}: (fib_mod m) (n + 2) = ((fib_mod m) n)
   rw [Fin.add_def]
   simp [Sigma.mk.inj_iff, Nat.fib_add]
 
-lemma fib_mod_add_one (m : ℕ) {n : ℕ} (h : n ≠ 0): (fib_mod m) (n - 1) = ((fib_mod m) (n + 1)) - ((fib_mod m) (n)) := by
+lemma mod_sub_mod_mod (m n k : ℕ) (h : n ≤ k) : (k - (n % m)) % m = (k - n) % m := by
+  sorry
+
+-- set_option pp.analyze true
+
+lemma fib_mod_add_one (m : ℕ) (n : ℕ) (h : n ≠ 0): (fib_mod m) (n - 1) = ((fib_mod m) (n + 1)) - ((fib_mod m) (n)) := by
   dsimp [fib_mod, Fin.ofNat]
   rw [Fin.sub_def]
   simp [Sigma.mk.inj_iff]
@@ -147,7 +64,12 @@ lemma fib_mod_add_one (m : ℕ) {n : ℕ} (h : n ≠ 0): (fib_mod m) (n - 1) = (
   simp
   have : (n - 1).fib = (n + 1).fib - n.fib := by simp [Nat.fib_add_one h]
   simp [this]
-  sorry
+  rw [mod_sub_mod_mod]
+  apply Monotone.imp Nat.fib_mono (Nat.le_succ n)
+  apply Nat.le_trans _ (Monotone.imp Nat.fib_mono (Nat.le_succ n))
+  simp [Nat.mod_le]
+  have h' : m + 1 > 0 := by norm_num
+  apply Nat.le_of_lt (Nat.mod_lt (Nat.fib n) h')
 
 def fib_mod_pair (m : ℕ) : ℕ → (Fin (m + 1)) × (Fin (m + 1)) := fun n => ((fib_mod m) n, (fib_mod m) (n + 1))
 
@@ -174,23 +96,22 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
       induction' n using Nat.twoStepInduction with a h1 h2
       · simp [hkl]
       · have h : (fib_mod m) (l - 1) = (fib_mod m ) (l + 1) - ((fib_mod m ) l) := by
-          sorry
+          apply fib_mod_add_one m l
+          linarith
         have h' : (fib_mod m) (k - 1) = (fib_mod m ) (k + 1) - ((fib_mod m ) k) := by
-          sorry
+          apply fib_mod_add_one m k
+          linarith
         simp [h, h']
         rw [hkl, hkl']
       · simp [Nat.succ]
+        simp [Nat.sub_add_eq]
         sorry
       · apply Nat.le_trans nle kle
       · apply nle
       · apply kle
-    ·
+    · sorry
   · sorry
 
-
-#check Fintype.exists_ne_map_eq_of_card_lt
--- try one of the type-y versions
--- set_option pp.analyze true
 theorem fib_nonzero_entry_exists (n : ℕ) (hn : n ≠ 0): ∃k ≠ 0, n ∣ (Nat.fib k) := by
   have hp : ∀m, ∃k ≠ 0, (fib_mod (n - 1)) m = (fib_mod (n - 1)) (m + k) := by
     intro m
@@ -232,12 +153,28 @@ lemma fib_entry_exists' (n : ℕ) : ∃k, n ∣ Nat.fib k := by
   use fib_entry n
   apply dvd_fib_fib_entry n
 
-lemma fib_entry_period (n : ℕ) : (fib_mod n).Periodic (fib_entry n) := by
-  dsimp
-  intro x
+#eval List.map (fib_mod 2) (List.iota 15)
+
+lemma fib_mod_zero_of_dvd_fib (m n : ℕ) : m ≠ 0 → (m ∣ Nat.fib n ↔ (fib_mod (m - 1)) n = 0) := by
+  intro h
+  have : m - 1 + 1 = m := by
+      apply Nat.sub_add_cancel
+      simp [Nat.one_le_iff_ne_zero, h]
+  constructor
+  · intro h'
+    dsimp [fib_mod, Fin.ofNat]
+    simp [this, Nat.mod_eq_zero_of_dvd h']
+  · intro h'
+    dsimp [fib_mod, Fin.ofNat] at h'
+    simp [this] at h'
+    apply Nat.dvd_of_mod_eq_zero
+    apply Fin.val_eq_of_eq h'
+
+lemma fib_mod_zero_add (m n k : ℕ) (h : fib_mod m n = 0) (h' : fib_mod m k = 0) : fib_mod m (n + k) = 0 := by
   sorry
 
-#eval List.map (fib_mod 5) (List.iota 50)
+lemma fib_entry_dvd_of_fib_mod_zero (m n : ℕ) (mne : m ≠ 0) (h : fib_mod (m - 1) n = 0) : fib_entry m ∣ n := by
+  sorry
 
 lemma fib_entry_dvd_iff_dvd_fib (m n : ℕ) : ((fib_entry m) ∣ n) ↔ m ∣ (Nat.fib n) := by
   constructor
@@ -245,14 +182,74 @@ lemma fib_entry_dvd_iff_dvd_fib (m n : ℕ) : ((fib_entry m) ∣ n) ↔ m ∣ (N
     have : Nat.fib (fib_entry m) ∣ Nat.fib n := Nat.fib_dvd (fib_entry m) n h
     apply Nat.dvd_trans (dvd_fib_fib_entry m) this
   · intro h
-    sorry
+    by_cases meq : m = 0
+    · dsimp [fib_entry]
+      simp [meq]
+      rw [meq] at h
+      apply Nat.fib_eq_zero.1
+      apply Nat.eq_zero_of_zero_dvd h
+    · have := (fib_mod_zero_of_dvd_fib m n meq).1 h
+      apply fib_entry_dvd_of_fib_mod_zero
+      push_neg at meq; exact meq; exact this
 
-theorem fib_entry_dvd (n m : ℕ) (h : n ∣ m) : fib_entry n ∣ fib_entry m := by
-  sorry
+theorem fib_entry_dvd (m n : ℕ) (h : m ∣ n) : fib_entry m ∣ fib_entry n := by
+  apply (fib_entry_dvd_iff_dvd_fib m (fib_entry n)).2
+  apply Nat.dvd_trans h (dvd_fib_fib_entry n)
 
-#eval fib_entry 1 -- how to use? rfl won't work
 lemma fib_entry_one : fib_entry 1 = 1 := by
   native_decide
+
+namespace CategoryTheory
+
+-- Defining the category structure directly:
+
+instance : Category.{0} ℕ where
+  Hom A B := ULift (PLift (A ∣ B))
+  id A := ⟨⟨dvd_refl A⟩⟩
+  comp X Y := ⟨⟨dvd_trans X.down.down Y.down.down⟩⟩
+
+-- Using the category structure of a preorder
+
+instance : Preorder ℕ where
+  le := fun n m => n ∣ m
+  lt := fun n m => n ∣ m ∧ n ≠ m
+  le_refl := fun n => dvd_rfl
+  le_trans := fun n m k => dvd_trans
+  lt_iff_le_not_le := by
+    intro n m
+    constructor
+    · simp
+      intro h
+      contrapose!
+      intro h'
+      have h' := h' h
+      exact (dvd_antisymm h h')
+    · simp
+      intro h
+      contrapose!
+      intro h'
+      have h' := h' h
+      rw [h']
+
+instance : Category.{0} ℕ := Preorder.smallCategory ℕ
+
+def fib_functor : ℕ ⥤ ℕ where
+  obj := Nat.fib
+  map := by
+    intro X Y h
+    exact ⟨⟨Nat.fib_dvd X Y h.down.down⟩⟩
+  map_id := by
+    intro a
+    dsimp
+    apply congrArg
+    apply congrArg
+    rfl
+  map_comp := by
+    intro a b c h h'
+    dsimp
+    apply congrArg
+    apply congrArg
+    rfl
 
 lemma nat_is_simple (A B : Nat) (f g : A ⟶ B) : f = g := by
   apply Subsingleton.elim (α := ULift (PLift (A ∣ B)))
@@ -271,6 +268,9 @@ instance : Limits.HasLimitsOfSize.{0, 0, 0, 0} ℕ where
       · intro s m j
         apply nat_is_simple
       · intro s
+        constructor
+        have nt := s.π
+        have C := ?has_limit.exists_limit.val.cone
         sorry
     · constructor
       constructor
@@ -309,23 +309,7 @@ lemma fib_solset : SolutionSetCondition.{0} fib_functor := by
   use 1
   have h' := h.down.down
   have h'' : (fib_entry a) ∣ X := by
-    have h'' := fib_entry_dvd a (Nat.fib X) h'
-    by_cases xeq : X = 0
-    · rw [xeq]
-      simp
-    · by_cases xeq' : X = 1
-      · rw [xeq'] at h'
-        have h' := Nat.dvd_one.1 h'
-        rw [h']
-        rw [fib_entry_one]
-        simp
-      · have xge : 2 ≤ X := by sorry
-        have H : fib_entry X.fib = X := by
-          norm_num [fib_entry, xeq]
-          have ⟨k, ⟨kne, fe_ex⟩⟩ := (fib_nonzero_entry_exists X xeq)
-          sorry
-        rw [H] at h''
-        exact h''
+    apply (fib_entry_dvd_iff_dvd_fib a X).2 h'
   use ⟨⟨h''⟩⟩
   apply nat_is_simple a (fib_functor.obj X)
 
