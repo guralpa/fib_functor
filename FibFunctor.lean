@@ -84,7 +84,12 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
   dsimp [fib_mod_pair] at heq
   let ⟨hkl, hkl'⟩ := (Prod.mk.inj_iff.1 heq)
   wlog kle : k ≤ l generalizing k l
-  · sorry
+  · apply this l k
+    simp [hne, Eq.comm]
+    simp [heq, Eq.comm]
+    simp [hkl, Eq.comm]
+    simp [hkl', Eq.comm]
+    linarith [kle]
   · use l - k
     constructor
     · contrapose! hne
@@ -112,7 +117,17 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
       · simp [Nat.succ]
         simp [Nat.sub_add_eq]
         rw [fib_mod_add_one]
-        sorry
+        rw [fib_mod_add_one m (k - a - 1)]
+        rw [Nat.sub_add_cancel, Nat.sub_add_cancel, h1, ← Nat.sub_add_eq, ← Nat.succ_eq_add_one a, h2]
+        simp [Nat.sub_add_eq]
+        omega
+        omega
+        omega
+        omega
+        omega
+        omega
+        omega
+        omega
       · omega
       · exact nle
       · exact kle
