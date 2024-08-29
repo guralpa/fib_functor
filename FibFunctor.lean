@@ -79,7 +79,6 @@ def fib_mod_pair (m : ℕ) : ℕ → (Fin (m + 1)) × (Fin (m + 1)) := fun n => 
 
 theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p := by
   dsimp
-  let pairs_mod_m := (Fin (m + 1)) × (Fin (m + 1))
   have ⟨k, l, hne, heq⟩ : ∃x, ∃y, x ≠ y ∧ (fib_mod_pair m) x = (fib_mod_pair m) y := Finite.exists_ne_map_eq_of_infinite (fib_mod_pair m)
   dsimp [fib_mod_pair] at heq
   let ⟨hkl, hkl'⟩ := (Prod.mk.inj_iff.1 heq)
@@ -131,7 +130,45 @@ theorem fib_mod_m_periodic (m : ℕ) : ∃p, p ≠ 0 ∧ (fib_mod m).Periodic p 
       · omega
       · exact nle
       · exact kle
-    · sorry
+    · have : k ≤ x := by omega
+      have ⟨n, xeqn⟩ : ∃n, x = k + n := by
+        have ⟨n, keq⟩ := Nat.exists_eq_add_of_le this
+        use n
+      rw [xeqn, ← Nat.add_sub_assoc _, Nat.sub_add_comm _, Nat.sub_add_comm _]
+      simp
+      rw [Nat.add_comm n l]
+      subst xeqn
+      induction' n using Nat.twoStepInduction with a h1 h2
+      · simp [hkl]
+      · simp [hkl']
+      · by_cases h : a = 0
+        · rw [h]
+          simp
+          rw [fib_mod_add_two, fib_mod_add_two]
+          simp [hkl, hkl']
+        · calc
+            (fib_mod m) (l + a.succ.succ) = (fib_mod m) (l + a + 2) := by
+              simp [Nat.succ]
+              simp [Nat.add_assoc]
+            _ = (fib_mod m) (l + a) + (fib_mod m) (l + a + 1) := by
+              simp [fib_mod_add_two]
+            _ = (fib_mod m) (k + a) + (fib_mod m ) (l + a + 1) := by
+              rw [h1]
+              · omega
+              · omega
+            _ = (fib_mod m) (k + a) + (fib_mod m) (k + a + 1) := by
+              simp
+              apply h2
+              omega
+              omega
+            _ = (fib_mod m) (k + a + 2) := by
+              simp [fib_mod_add_two]
+            _ = (fib_mod m) (k + a.succ.succ) := by
+              simp [Nat.succ, Nat.add_assoc]
+      · omega
+      · omega
+      · omega
+
 
 theorem fib_nonzero_entry_exists (n : ℕ) (hn : n ≠ 0): ∃k ≠ 0, n ∣ (Nat.fib k) := by
   have hp : ∀m, ∃k ≠ 0, (fib_mod (n - 1)) m = (fib_mod (n - 1)) (m + k) := by
